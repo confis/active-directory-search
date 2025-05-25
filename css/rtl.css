@@ -1,0 +1,41 @@
+/* rtl.css */
+
+/* Force the page to use RTL direction */
+body {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Fix specific Bootstrap classes for RTL */
+.table th, .table td {
+    text-align: right;
+}
+
+.form-control {
+    text-align: right;
+}
+
+.btn {
+    float: right;
+}
+
+/* Ensure modals, popovers, and other elements respect RTL */
+.modal-dialog {
+    direction: rtl;
+}
+
+.navbar, .dropdown-menu {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Adjust padding/margin for RTL */
+.ms-auto {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+.me-auto {
+    margin-left: auto;
+    margin-right: 0;
+}
