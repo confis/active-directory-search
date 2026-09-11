@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/branding.php';
 require_once __DIR__ . '/includes/ldap_functions.php';
 
 // פונקציה להמרת מספר טלפון ללינק תקני
@@ -285,11 +286,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || isset($_GET['page'])) {
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>חיפוש במדריך הארגוני</title>
+    <title><?= htmlspecialchars($brand['title'] !== '' ? $brand['title'] : $brand['name']) ?></title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/rtl.css">
     <link rel="stylesheet" href="css/custom-directory.css">
     <style>
+<?= brand_theme_css($brand) ?>
     .ellipsis-cell {
         cursor: pointer;
         white-space: nowrap;
@@ -313,8 +315,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || isset($_GET['page'])) {
 <div class="container">
 
     <div class="header-container">
-        <img src="images/logo.jpg" alt="Company Logo" class="header-logo">
-        <h2 class="mt-4">חיפוש לפי שם, קומה, תפקיד, עיר או מחלקה</h2>
+        <?php if ($brand['logo'] !== ''): ?>
+            <img src="<?= htmlspecialchars($brand['logo']) ?>" alt="<?= htmlspecialchars($brand['logo_alt']) ?>" class="header-logo">
+        <?php endif; ?>
+        <?php if ($brand['subtitle'] !== ''): ?>
+            <h2 class="mt-4"><?= htmlspecialchars($brand['subtitle']) ?></h2>
+        <?php endif; ?>
     </div>
 
     <div class="search-form-center">
@@ -538,7 +544,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || isset($_GET['page'])) {
     <?php endif; ?>
 
     <div class="version-footer">
-        גרסה 1.16 | 25.5.2025
+        גרסה 1.17 | 11.9.2026
     </div>
 </div>
 <script src="js/bootstrap.bundle.min.js"></script>
