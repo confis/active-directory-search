@@ -1,0 +1,155 @@
+{
+  "name": "GLILA – GSC Keyword Tracking",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1],
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "b1b2c3d4-0001-4001-8001-000000000001",
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-40, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-1",
+              "name": "siteUrl",
+              "value": "sc-domain:glila.co.il",
+              "type": "string"
+            },
+            {
+              "id": "cfg-2",
+              "name": "sheetId",
+              "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "cfg-3",
+              "name": "rowLimit",
+              "value": 100,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-4001-8001-000000000002",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// נתוני Search Console זמינים בעיכוב של ~2-3 ימים, לכן לוקחים חלון של שבוע שהסתיים לפני 3 ימים.\nconst lag = 3;\nconst end = new Date(Date.now() - lag * 86400000);\nconst start = new Date(end.getTime() - 6 * 86400000);\nconst fmt = (d) => d.toISOString().slice(0, 10);\nreturn [{ json: { startDate: fmt(start), endDate: fmt(end) } }];"
+      },
+      "id": "b1b2c3d4-0003-4001-8001-000000000003",
+      "name": "Date Range",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/webmasters/v3/sites/{{ encodeURIComponent($('Config').item.json.siteUrl) }}/searchAnalytics/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ startDate: $json.startDate, endDate: $json.endDate, dimensions: ['query'], rowLimit: $('Config').item.json.rowLimit }) }}",
+        "options": {}
+      },
+      "id": "b1b2c3d4-0004-4001-8001-000000000004",
+      "name": "Query Search Console",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 300],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLE_OAUTH_CRED_ID",
+          "name": "Google Search Console"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const period = $('Date Range').item.json;\nconst rows = $input.first().json.rows || [];\nconst fetchedAt = new Date().toISOString().slice(0, 10);\nif (rows.length === 0) {\n  return [{ json: { fetched_at: fetchedAt, period_start: period.startDate, period_end: period.endDate, query: '(אין נתונים לתקופה זו)', clicks: 0, impressions: 0, ctr: 0, position: 0 } }];\n}\nreturn rows.map((r) => ({\n  json: {\n    fetched_at: fetchedAt,\n    period_start: period.startDate,\n    period_end: period.endDate,\n    query: r.keys[0],\n    clicks: r.clicks,\n    impressions: r.impressions,\n    ctr: Math.round(r.ctr * 10000) / 100,\n    position: Math.round(r.position * 100) / 100\n  }\n}));"
+      },
+      "id": "b1b2c3d4-0005-4001-8001-000000000005",
+      "name": "Format Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Keywords",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0006-4001-8001-000000000006",
+      "name": "Append to Tracking Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1060, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLE_SHEETS_CRED_ID",
+          "name": "Google Sheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekly Trigger": {
+      "main": [[{ "node": "Config", "type": "main", "index": 0 }]]
+    },
+    "Config": {
+      "main": [[{ "node": "Date Range", "type": "main", "index": 0 }]]
+    },
+    "Date Range": {
+      "main": [[{ "node": "Query Search Console", "type": "main", "index": 0 }]]
+    },
+    "Query Search Console": {
+      "main": [[{ "node": "Format Rows", "type": "main", "index": 0 }]]
+    },
+    "Format Rows": {
+      "main": [[{ "node": "Append to Tracking Sheet", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "מושך אחת לשבוע את ביצועי מילות החיפוש של glila.co.il מ-Google Search Console ומוסיף אותם לגיליון Google Sheets למעקב היסטורי."
+  }
+}

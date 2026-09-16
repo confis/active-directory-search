@@ -1,0 +1,215 @@
+{
+  "name": "GLILA – Weekly Article Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [0],
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-4001-8001-000000000001",
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-40, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-1",
+              "name": "siteTopic",
+              "value": "מלא כאן את תחום התוכן של glila.co.il (לדוגמה: טיולים ואטרקציות בגליל)",
+              "type": "string"
+            },
+            {
+              "id": "cfg-2",
+              "name": "wpBaseUrl",
+              "value": "https://glila.co.il",
+              "type": "string"
+            },
+            {
+              "id": "cfg-3",
+              "name": "postStatus",
+              "value": "draft",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0002-4001-8001-000000000002",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-4o', response_format: { type: 'json_object' }, messages: [ { role: 'system', content: 'אתה כותב תוכן SEO מקצועי בעברית לאתר glila.co.il. אתה כותב מאמרים מקוריים, מדויקים, מזמינים וברורים, עם כותרת ממוקדת מילות מפתח.' }, { role: 'user', content: 'כתוב מאמר בעברית באורך של עד 500 מילים בנושא: ' + $json.siteTopic + '. בחר זווית טרייה ורלוונטית לשבוע הנוכחי. המאמר צריך לכלול לפחות כותרת משנה אחת. החזר אך ורק אובייקט JSON תקין עם המפתחות הבאים: title (כותרת המאמר בעברית), content_html (גוף המאמר ב-HTML עם תגיות <p> ו-<h2>), excerpt (תקציר של משפט אחד), tags (מערך של 3-5 מילות מפתח בעברית), image_prompt (תיאור באנגלית לתמונת נושא ל-DALL·E, בסגנון צילום מציאותי, ללא טקסט על התמונה).' } ] }) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0003-4001-8001-000000000003",
+      "name": "Generate Article (GPT)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_OPENAI_CRED_ID",
+          "name": "OpenAI Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.choices[0].message.content;\nlet data;\ntry {\n  data = JSON.parse(raw);\n} catch (e) {\n  throw new Error('לא הצלחתי לפרסר את תשובת ה-GPT כ-JSON: ' + e.message);\n}\nreturn [{ json: data }];"
+      },
+      "id": "a1b2c3d4-0004-4001-8001-000000000004",
+      "name": "Parse Article JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'dall-e-3', prompt: $json.image_prompt, n: 1, size: '1024x1024' }) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0005-4001-8001-000000000005",
+      "name": "Generate Image (DALL·E)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_OPENAI_CRED_ID",
+          "name": "OpenAI Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data[0].url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0006-4001-8001-000000000006",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').item.json.wpBaseUrl }}/wp-json/wp/v2/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "attachment; filename=\"glila-weekly.png\""
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0007-4001-8001-000000000007",
+      "name": "Upload Image to WordPress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1280, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_WORDPRESS_CRED_ID",
+          "name": "WordPress glila.co.il"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').item.json.wpBaseUrl }}/wp-json/wp/v2/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $('Parse Article JSON').item.json.title, content: $('Parse Article JSON').item.json.content_html, excerpt: $('Parse Article JSON').item.json.excerpt, status: $('Config').item.json.postStatus, featured_media: $json.id }) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0008-4001-8001-000000000008",
+      "name": "Create WordPress Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_WORDPRESS_CRED_ID",
+          "name": "WordPress glila.co.il"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekly Trigger": {
+      "main": [[{ "node": "Config", "type": "main", "index": 0 }]]
+    },
+    "Config": {
+      "main": [[{ "node": "Generate Article (GPT)", "type": "main", "index": 0 }]]
+    },
+    "Generate Article (GPT)": {
+      "main": [[{ "node": "Parse Article JSON", "type": "main", "index": 0 }]]
+    },
+    "Parse Article JSON": {
+      "main": [[{ "node": "Generate Image (DALL·E)", "type": "main", "index": 0 }]]
+    },
+    "Generate Image (DALL·E)": {
+      "main": [[{ "node": "Download Image", "type": "main", "index": 0 }]]
+    },
+    "Download Image": {
+      "main": [[{ "node": "Upload Image to WordPress", "type": "main", "index": 0 }]]
+    },
+    "Upload Image to WordPress": {
+      "main": [[{ "node": "Create WordPress Post", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "מפרסם מאמר SEO שבועי (עד 500 מילים) עם תמונת DALL·E לאתר WordPress של glila.co.il."
+  }
+}
