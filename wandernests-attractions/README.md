@@ -31,8 +31,7 @@ const engine = new AttractionsEngine({
 const handle = createRecommendationsController({
   engine,
   tenancy: tenancyConfigFromEnv(), // wandernests.app → affiliate; <agency>.wandernests.app → none
-  loadTrip: (id) => db.trips.findWithDays(id), // must include trips.org_id as orgId
-  isAgencyLinkedUser: (userId) => db.isAgencyLinkedUser(userId), // SQL in ARCHITECTURE.md §3
+  loadTrip: (id) => db.trips.findWithDays(id),
 });
 
 app.get('/api/trips/:tripId/days/:dayIndex/recommendations', async (req, res) => {

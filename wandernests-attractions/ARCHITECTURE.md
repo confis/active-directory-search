@@ -63,24 +63,9 @@ The aggregator engine runs **only on the public consumer app**. Each travel agen
 | `biz.`, `wandernests-admin.` (business and admin consoles) | unknown | `none` |
 | reserved subdomains (`api`, `admin`, `staging`…), nested subdomains, other hosts, localhost | unknown | `none` (fail-closed) |
 
-**Aggregator offers are shown only when all three conditions hold.** Any sign of an agency turns them off:
+**The decision depends only on which app the request comes from (the host), not on who the user is.** Users of the public app get the engine, including agency clients and agency-owned trips. Nobody gets it on an agency's subdomain.
 
-1. **Host:** the request comes from the public app (`wandernests.app`) and not from `<agency>.wandernests.app`.
-2. **Trip:** the trip is not owned by an agency (`trips.org_id` is null).
-3. **User:** the user has no link to any agency. Without this check, an agency client who logs in to the public app, even on a personal trip, would see aggregator offers. It runs against the existing tables:
-
-```sql
--- isAgencyLinkedUser($1): agency staff, or a traveller on any agency-owned trip
-select exists (
-  select 1 from public.organization_members where user_id = $1
-  union all
-  select 1 from public.trip_members tm
-    join public.trips t on t.id = tm.trip_id
-   where tm.user_id = $1 and t.org_id is not null
-);
-```
-
-* Enforcement is **server-side** in `recommendationsController`. When any condition fails, it returns an empty `DayRecommendations` with no supplier calls, no affiliate links and no sub-IDs. The UI already renders nothing for an empty response. Responses carry `Vary: Host`.
+* Enforcement is **server-side** in `recommendationsController`. On a non-public host it returns an empty `DayRecommendations` with no supplier calls, no affiliate links and no sub-IDs. The UI already renders nothing for an empty response. Responses carry `Vary: Host`.
 * The host must come from a trusted source. The main app already resolves it with `clientHostFrom()` and `brandSlugFromHost()` in `src/lib/brand-host.ts`, so reuse those when integrating. The reserved labels here (`biz`, `admin`, `wandernests-admin`) match that file.
 * **Agency recommendations already exist** in the main app as `agency_offers` (migration 0021). This is the natural content for agency apps, instead of aggregator inventory.
 

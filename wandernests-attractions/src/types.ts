@@ -35,8 +35,6 @@ export interface ItineraryDay {
 export interface Trip {
   id: string;
   userId: string;
-  /** Owning agency (trips.org_id). Null/undefined for a personal consumer trip. */
-  orgId?: string | null;
   currency: string;
   locale: string;
   days: ItineraryDay[];

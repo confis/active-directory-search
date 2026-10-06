@@ -40,16 +40,11 @@ describe('recommendationModeFor', () => {
 });
 
 describe('controller tenant gating', () => {
-  function setup(opts: { orgId?: string; agencyLinked?: boolean } = {}) {
+  function setup() {
     const gyg = fakeAdapter('getyourguide', () => [activity('getyourguide', 'g1', 'A'), activity('getyourguide', 'g2', 'B')]);
     const engine = new AttractionsEngine({ suppliers: { getyourguide: gyg }, affiliateConfig, subIdSecret: 's', now: NOW });
-    const t = { ...trip('Paris', 'FR', ['Louvre']), orgId: opts.orgId ?? null };
-    const handle = createRecommendationsController({
-      engine,
-      tenancy: config,
-      loadTrip: async () => t,
-      isAgencyLinkedUser: async () => opts.agencyLinked ?? false,
-    });
+    const t = trip('Paris', 'FR', ['Louvre']);
+    const handle = createRecommendationsController({ engine, tenancy: config, loadTrip: async () => t });
     return { gyg, handle };
   }
   async function expectEmpty(res: Awaited<ReturnType<ReturnType<typeof setup>['handle']>>) {
@@ -79,18 +74,6 @@ describe('controller tenant gating', () => {
       expect(res.body.disclosure).toBe('');
       expect(res.headers.Vary).toBe('Host');
     }
-    expect(gyg.calls).toHaveLength(0);
-  });
-
-  it('returns nothing on the public app for an agency-owned trip', async () => {
-    const { gyg, handle } = setup({ orgId: 'org-shasha' });
-    await expectEmpty(await handle(req('wandernests.app')));
-    expect(gyg.calls).toHaveLength(0);
-  });
-
-  it('returns nothing on the public app for an agency client, even on a personal trip', async () => {
-    const { gyg, handle } = setup({ agencyLinked: true });
-    await expectEmpty(await handle(req('wandernests.app')));
     expect(gyg.calls).toHaveLength(0);
   });
 
