@@ -31,7 +31,8 @@ const engine = new AttractionsEngine({
 const handle = createRecommendationsController({
   engine,
   tenancy: tenancyConfigFromEnv(), // wandernests.app → affiliate; <agency>.wandernests.app → none
-  loadTrip: (id) => db.trips.findWithDays(id),
+  loadTrip: (id) => db.trips.findWithDays(id), // must include trips.org_id as orgId
+  isAgencyLinkedUser: (userId) => db.isAgencyLinkedUser(userId), // SQL in ARCHITECTURE.md §3
 });
 
 app.get('/api/trips/:tripId/days/:dayIndex/recommendations', async (req, res) => {
@@ -59,5 +60,5 @@ import { RecommendedActivities, SkipTheLineWidget, useDayRecommendations } from 
 | `AFFILIATE_SUBID_SECRET` | HMAC secret for opaque sub-IDs |
 | `WN_ROOT_DOMAIN` | Default `wandernests.app` |
 | `WN_PUBLIC_HOSTS` | Hosts serving the public app. Default `wandernests.app,www.wandernests.app` |
-| `WN_RESERVED_SUBDOMAINS` | Subdomains that are never agencies. Default `api,admin,staging,dev,mail,cdn,static,assets` |
+| `WN_RESERVED_SUBDOMAINS` | Subdomains that are never agencies. Default `biz,admin,wandernests-admin,api,staging,dev,mail,cdn,static,assets` |
 | `WN_AGENCY_RECOMMENDATION_MODES` | Optional JSON per-agency override, e.g. `{"rimon":"affiliate"}`. Default for every agency is `none` |

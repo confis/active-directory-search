@@ -42,7 +42,7 @@ export function tenancyConfigFromEnv(env: Record<string, string | undefined> = p
   return {
     rootDomain,
     publicHosts: list(env.WN_PUBLIC_HOSTS, `${rootDomain},www.${rootDomain}`),
-    reservedSubdomains: list(env.WN_RESERVED_SUBDOMAINS, 'api,admin,staging,dev,mail,cdn,static,assets'),
+    reservedSubdomains: list(env.WN_RESERVED_SUBDOMAINS, 'biz,admin,wandernests-admin,api,staging,dev,mail,cdn,static,assets'),
     agencyModes: env.WN_AGENCY_RECOMMENDATION_MODES ? JSON.parse(env.WN_AGENCY_RECOMMENDATION_MODES) : undefined,
   };
 }

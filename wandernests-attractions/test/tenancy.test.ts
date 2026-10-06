@@ -14,6 +14,8 @@ describe('resolveTenant', () => {
     ['shasha.wandernests.app', { kind: 'agency', slug: 'shasha' }],
     ['rimon.wandernests.app.', { kind: 'agency', slug: 'rimon' }],
     ['api.wandernests.app', { kind: 'unknown', host: 'api.wandernests.app' }],
+    ['biz.wandernests.app', { kind: 'unknown', host: 'biz.wandernests.app' }],
+    ['wandernests-admin.wandernests.app', { kind: 'unknown', host: 'wandernests-admin.wandernests.app' }],
     ['x.shasha.wandernests.app', { kind: 'unknown', host: 'x.shasha.wandernests.app' }],
     ['evilwandernests.app', { kind: 'unknown', host: 'evilwandernests.app' }],
     ['wandernests.app.evil.com', { kind: 'unknown', host: 'wandernests.app.evil.com' }],
@@ -38,12 +40,24 @@ describe('recommendationModeFor', () => {
 });
 
 describe('controller tenant gating', () => {
-  function setup() {
+  function setup(opts: { orgId?: string; agencyLinked?: boolean } = {}) {
     const gyg = fakeAdapter('getyourguide', () => [activity('getyourguide', 'g1', 'A'), activity('getyourguide', 'g2', 'B')]);
     const engine = new AttractionsEngine({ suppliers: { getyourguide: gyg }, affiliateConfig, subIdSecret: 's', now: NOW });
-    const t = trip('Paris', 'FR', ['Louvre']);
-    const handle = createRecommendationsController({ engine, tenancy: config, loadTrip: async () => t });
+    const t = { ...trip('Paris', 'FR', ['Louvre']), orgId: opts.orgId ?? null };
+    const handle = createRecommendationsController({
+      engine,
+      tenancy: config,
+      loadTrip: async () => t,
+      isAgencyLinkedUser: async () => opts.agencyLinked ?? false,
+    });
     return { gyg, handle };
+  }
+  async function expectEmpty(res: Awaited<ReturnType<ReturnType<typeof setup>['handle']>>) {
+    expect(res.status).toBe(200);
+    if (res.status === 200) {
+      expect(res.body.activities).toEqual([]);
+      expect(res.body.landmarkWidgets).toEqual([]);
+    }
   }
   const req = (host: string) => ({ authUserId: 'user-42', host, tripId: 'trip-123', dayIndex: '0' });
 
@@ -66,6 +80,23 @@ describe('controller tenant gating', () => {
       expect(res.headers.Vary).toBe('Host');
     }
     expect(gyg.calls).toHaveLength(0);
+  });
+
+  it('returns nothing on the public app for an agency-owned trip', async () => {
+    const { gyg, handle } = setup({ orgId: 'org-shasha' });
+    await expectEmpty(await handle(req('wandernests.app')));
+    expect(gyg.calls).toHaveLength(0);
+  });
+
+  it('returns nothing on the public app for an agency client, even on a personal trip', async () => {
+    const { gyg, handle } = setup({ agencyLinked: true });
+    await expectEmpty(await handle(req('wandernests.app')));
+    expect(gyg.calls).toHaveLength(0);
+  });
+
+  it.each(['biz.wandernests.app', 'wandernests-admin.wandernests.app'])('returns nothing on %s', async (host) => {
+    const { handle } = setup();
+    await expectEmpty(await handle(req(host)));
   });
 
   it('still enforces auth on agency hosts', async () => {

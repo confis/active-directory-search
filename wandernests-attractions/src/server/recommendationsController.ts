@@ -20,6 +20,13 @@ export interface RecommendationsDeps {
   engine: AttractionsEngine;
   tenancy: TenancyConfig;
   loadTrip(tripId: string): Promise<Trip | undefined>;
+  /**
+   * True when the user is linked to ANY agency: agency staff (organization_members)
+   * or a traveller on any agency-owned trip (trip_members → trips.org_id not null).
+   * Such users never see aggregator offers, even on the public app or on a personal trip.
+   * See ARCHITECTURE.md §3 for the SQL.
+   */
+  isAgencyLinkedUser(userId: string): Promise<boolean>;
 }
 
 export type ControllerResult =
@@ -63,8 +70,14 @@ export function createRecommendationsController(deps: RecommendationsDeps) {
     if (!trip || !day) return { status: 404, body: { error: 'Not found' } };
     if (!params.authUserId || trip.userId !== params.authUserId) return { status: 403, body: { error: 'Forbidden' } };
 
-    const mode = recommendationModeFor(resolveTenant(params.host, deps.tenancy), deps.tenancy);
-    if (mode !== 'affiliate') {
+    // Aggregator offers only when ALL of these hold — any agency signal disables them:
+    //   1. the request is on the public app host (not <agency>.wandernests.app)
+    //   2. the trip is not owned by an agency
+    //   3. the user is not linked to any agency
+    const hostAllows =
+      recommendationModeFor(resolveTenant(params.host, deps.tenancy), deps.tenancy) === 'affiliate';
+    const allowed = hostAllows && !trip.orgId && !(await deps.isAgencyLinkedUser(params.authUserId));
+    if (!allowed) {
       // No supplier calls, no affiliate links, no sub-IDs issued.
       return { status: 200, body: disabledRecommendations(day), headers: HEADERS };
     }
