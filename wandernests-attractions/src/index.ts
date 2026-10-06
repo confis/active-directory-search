@@ -12,3 +12,5 @@ export type { SupplierAdapter, SupplierRegistry } from './suppliers/SupplierAdap
 export { InMemoryTtlCache } from './cache';
 export type { Cache } from './cache';
 export { createRecommendationsController } from './server/recommendationsController';
+export { resolveTenant, recommendationModeFor, tenancyConfigFromEnv, normalizeHost } from './tenancy/tenant';
+export type { Tenant, TenancyConfig, RecommendationMode } from './tenancy/tenant';

@@ -52,7 +52,22 @@ sequenceDiagram
   Partner-->>DB: nightly conversion report import, joined on sub-ID
 ```
 
-## 3. Routing rules
+## 3. Tenancy: public app vs. agency apps
+
+The aggregator engine runs **only on the public consumer app**. Each travel agency has its own white-label app on a subdomain, for example `shasha.wandernests.app` or `rimon.wandernests.app`. There the traveller is the agency's customer, so recommendations must come from the agency, not from an aggregator.
+
+| Host | Tenant | Recommendation mode |
+|---|---|---|
+| `wandernests.app`, `www.wandernests.app` | public | `affiliate` (this engine) |
+| `<agency>.wandernests.app` | agency | `none` (default; per-agency override possible) |
+| reserved subdomains (`api`, `admin`, `staging`…), nested subdomains, other hosts, localhost | unknown | `none` (fail-closed) |
+
+* Enforcement is **server-side** in `recommendationsController`, based on the request host. In `none` mode it returns an empty `DayRecommendations` with no supplier calls, no affiliate links and no sub-IDs. The UI already renders nothing for an empty response. Responses carry `Vary: Host`.
+* The host must come from a trusted source: the `Host` header, or `X-Forwarded-Host` only when your own proxy sets it.
+* The UI fetches the API with a relative path, so the request goes to the same host as the app. If the API ever moves to a shared host such as `api.wandernests.app`, the tenant has to be passed some other way. A host-based check on the API host would then resolve to `unknown` and fail closed.
+* **Planned modes**, for when agencies expose inventory: `agency_catalog` (the agency's own products through an `AgencyCatalogAdapter` that implements `SupplierAdapter`) and `agency_affiliate` (aggregator inventory under the agency's own affiliate IDs).
+
+## 3a. Routing rules
 
 `routeSuppliers()` is a **pure function**: (country, intent, override, disabled set) → ordered chain.
 
@@ -127,7 +142,8 @@ src/
   tracking/affiliateLinks.ts       affiliate params, sub-IDs, URL decoration
   cache.ts                         cache contract + in-memory TTL cache
   AttractionsEngine.ts             orchestration: routing, fallback, ranking, widgets
-  server/recommendationsController.ts  framework-agnostic HTTP handler with authz
+  tenancy/tenant.ts                host → public/agency tenant → recommendation mode
+  server/recommendationsController.ts  framework-agnostic HTTP handler with authz + tenant gating
 ui/
   RecommendedActivities.tsx        rail, card, skip-the-line widget, disclosure, data hook
   attractions.css                  token-driven, mobile-first styles

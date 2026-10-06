@@ -13,7 +13,7 @@ npm test
 
 ```ts
 import {
-  AttractionsEngine, affiliateConfigFromEnv, createHttpAdapter, createRecommendationsController,
+  AttractionsEngine, affiliateConfigFromEnv, createHttpAdapter, createRecommendationsController, tenancyConfigFromEnv,
 } from '@wandernests/attractions-engine';
 
 const engine = new AttractionsEngine({
@@ -28,10 +28,15 @@ const engine = new AttractionsEngine({
   onSubIdIssued: (r) => db.affiliateSubids.upsert(r),
 });
 
-const handle = createRecommendationsController({ engine, loadTrip: (id) => db.trips.findWithDays(id) });
+const handle = createRecommendationsController({
+  engine,
+  tenancy: tenancyConfigFromEnv(), // wandernests.app → affiliate; <agency>.wandernests.app → none
+  loadTrip: (id) => db.trips.findWithDays(id),
+});
 
 app.get('/api/trips/:tripId/days/:dayIndex/recommendations', async (req, res) => {
-  const out = await handle({ authUserId: req.user?.id, ...req.params });
+  // req.hostname: with Express `trust proxy` set only for your own load balancer.
+  const out = await handle({ authUserId: req.user?.id, host: req.hostname, ...req.params });
   res.status(out.status).set('headers' in out ? out.headers : {}).json(out.body);
 });
 ```
@@ -52,3 +57,7 @@ import { RecommendedActivities, SkipTheLineWidget, useDayRecommendations } from 
 | `KLOOK_API_KEY`, `KLOOK_AID`, `KLOOK_API_BASE`, `KLOOK_SUBID_PARAM` | Klook |
 | `TIQETS_API_KEY`, `TIQETS_PARTNER` | Tiqets |
 | `AFFILIATE_SUBID_SECRET` | HMAC secret for opaque sub-IDs |
+| `WN_ROOT_DOMAIN` | Default `wandernests.app` |
+| `WN_PUBLIC_HOSTS` | Hosts serving the public app. Default `wandernests.app,www.wandernests.app` |
+| `WN_RESERVED_SUBDOMAINS` | Subdomains that are never agencies. Default `api,admin,staging,dev,mail,cdn,static,assets` |
+| `WN_AGENCY_RECOMMENDATION_MODES` | Optional JSON per-agency override, e.g. `{"rimon":"affiliate"}`. Default for every agency is `none` |
