@@ -1,0 +1,395 @@
+:root {
+  --bg: #000000;
+  --panel: #0e0e0e;
+  --panel-2: #181818;
+  --border: #2c2c2c;
+  --text: #f2f2f2;
+  --muted: #a9a9a9;
+  --accent: #ffd400; /* yellow */
+  --accent-2: #ffe14d;
+  --lyrics: #ffe600; /* yellow lyrics */
+  --danger: #ff6b81;
+  --radius: 16px;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Assistant", system-ui, -apple-system, Arial,
+    sans-serif;
+  min-height: 100vh;
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+
+.wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 16px 90px;
+}
+
+.header h1 {
+  font-size: clamp(28px, 7vw, 42px);
+  margin: 0 0 8px;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+}
+
+.header p {
+  color: var(--muted);
+  margin: 0 0 24px;
+  font-size: clamp(15px, 4vw, 17px);
+}
+
+/* Add bar */
+.add-box {
+  display: flex;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+
+.add-box input {
+  flex: 1 1 260px;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 15px 16px;
+  border-radius: 12px;
+  font-size: 17px;
+  outline: none;
+}
+
+.add-box input::placeholder {
+  color: #7d7d7d;
+}
+
+.add-box input:focus {
+  border-color: var(--accent);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 700;
+  transition: transform 0.05s ease, opacity 0.15s ease;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-add {
+  background: var(--accent);
+  color: #000;
+  padding: 15px 24px;
+  flex: 0 0 auto;
+}
+
+.error {
+  margin-top: 14px;
+  background: rgba(255, 107, 129, 0.14);
+  border: 1px solid rgba(255, 107, 129, 0.45);
+  color: #ffd3da;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.hint {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.list {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.empty {
+  margin-top: 44px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+/* Song card */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.card.dragging {
+  opacity: 0.4;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px;
+}
+
+.handle {
+  cursor: grab;
+  color: var(--accent);
+  font-size: 26px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  user-select: none;
+  touch-action: none;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.num {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.titles .t {
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titles .a {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.icon-btn {
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1px solid var(--border);
+}
+
+.icon-btn.danger {
+  color: var(--danger);
+}
+
+/* Lyrics body */
+.card-body {
+  padding: 4px 18px 22px;
+  border-top: 1px solid var(--border);
+}
+
+.chorus {
+  margin: 18px 0;
+  padding: 16px 18px;
+  background: rgba(255, 212, 0, 0.08);
+  border: 1px solid rgba(255, 212, 0, 0.45);
+  border-radius: 12px;
+}
+
+.chorus .label {
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.chorus div {
+  color: var(--lyrics);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.95;
+}
+
+.lyrics {
+  white-space: pre-wrap;
+  font-size: 20px;
+  line-height: 1.95;
+  color: var(--lyrics);
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+.src {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.src a {
+  color: var(--accent);
+  word-break: break-all;
+}
+
+/* Edit form */
+.edit-form {
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-form label span {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.edit-form input,
+.edit-form textarea {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 17px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+}
+
+.edit-form input:focus,
+.edit-form textarea:focus {
+  border-color: var(--accent);
+}
+
+.edit-form textarea {
+  line-height: 1.7;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.edit-actions .btn-add {
+  width: auto;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  border-top-color: #000;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+  vertical-align: -3px;
+  margin-inline-start: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Larger, more readable text on tablets and phones */
+@media (max-width: 820px) {
+  .wrap {
+    padding: 22px 14px 90px;
+  }
+  .lyrics,
+  .chorus div {
+    font-size: 22px;
+    line-height: 2.05;
+  }
+  .titles .t {
+    font-size: 21px;
+    white-space: normal;
+  }
+}
+
+/* On narrow screens move the action buttons to their own row so the
+   song title always has room and never gets squeezed. */
+@media (max-width: 640px) {
+  .card-head {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .titles {
+    flex: 1 1 auto;
+  }
+  .card-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+  .card-actions .icon-btn {
+    flex: 1 1 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 500px) {
+  .add-box {
+    gap: 8px;
+  }
+  .btn-add {
+    width: 100%;
+  }
+  .lyrics,
+  .chorus div {
+    font-size: 23px;
+  }
+}
