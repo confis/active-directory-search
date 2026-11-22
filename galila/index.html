@@ -206,6 +206,12 @@
   .bl.total span:last-child{font-family:'Frank Ruhl Libre';font-size:1.5rem;color:var(--sand)}
   .calc .right .btn{margin-top:auto}
   .finep{font-size:.76rem;opacity:.55;margin-top:14px;line-height:1.5}
+  .cprev{position:relative;height:168px;border-radius:16px;overflow:hidden;margin-bottom:22px;
+      box-shadow:0 10px 24px -14px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.12)}
+  .cprev-chip{position:absolute;right:12px;bottom:12px;z-index:3;background:rgba(26,22,17,.85);color:#f5efe3;
+      font-weight:700;font-size:.92rem;padding:7px 15px;border-radius:999px;backdrop-filter:blur(4px)}
+  .osum-thumb{position:relative;height:150px;border-radius:14px;overflow:hidden;margin-bottom:16px;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
 
   /* how it works */
   .how{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-top:10px}
@@ -395,6 +401,7 @@
         </div>
       </div>
       <div class="right">
+        <div class="cprev" id="cPrev"></div>
         <div class="result-label">מחיר משוער</div>
         <div class="price-big"><span id="priceVal">0</span> <small>₪</small></div>
         <div class="result-sub" id="styleName">—</div>
@@ -471,6 +478,7 @@
       <h2>שולחים את הסיכום — ואנחנו ממשיכים מכאן</h2>
       <p>מלאו את הפרטים, והסיכום של הוילון שבחרתם יישלח אלינו ישירות בוואטסאפ. נחזור אליכם לתיאום בד, גוון וזמן אספקה.</p>
       <div class="order-summary">
+        <div class="osum-thumb" id="oThumb"></div>
         <h4>סיכום ההזמנה שלכם</h4>
         <div class="osl"><span>סגנון</span><b id="oStyle">—</b></div>
         <div class="osl"><span>מידות</span><b id="oDims">—</b></div>
@@ -583,6 +591,80 @@ function heightSupplement(h_m){
 const nf = new Intl.NumberFormat('he-IL');
 let current = STYLES[0];
 
+/* ============================================================
+   מחולל איור וילון ריאליסטי לכל סגנון תפירה (SVG)
+   כל סגנון מצויר עם "ראש" (פתח התפירה) שונה וברור:
+   קפל צרפתי / סרט כיווץ / גלים / שיפוע / פנלים
+   ============================================================ */
+const SVG_CFG = {
+  'f-pleat':     {header:'pinch',  folds:9},
+  'f-pencil':    {header:'pencil', folds:15},
+  'f-pencilwide':{header:'pencil', folds:13, tall:true},
+  'f-wave':      {header:'wave',   folds:8},
+  'f-cascade':   {header:'cascade',folds:11},
+  'f-panel':     {header:'panel',  folds:4, flat:true},
+};
+function curtainSVG(key){
+  const c = SVG_CFG[key] || SVG_CFG['f-pencil'];
+  const W=300,H=360,mx=12,hemY=H-28,foldTop=22;
+  const n=c.folds, fw=(W-2*mx)/n, sfx=key.replace('f-','');
+  const fillRef = c.flat ? ('ff-'+sfx) : ('fd-'+sfx);
+  let body='';
+  for(let i=0;i<n;i++){
+    const x0=mx+i*fw, x1=x0+fw, xc=(x0+x1)/2;
+    let hy=hemY, ft=foldTop;
+    if(c.header==='cascade') hy = hemY - (i/(n-1))*78;      // מכפל שיפוע – מלל אלכסוני
+    if(c.header==='wave')    ft = foldTop + (i%2?2:-4);
+    const dip = c.flat?2:7;
+    body += '<path d="M'+x0+' '+ft+' L'+x0+' '+hy+' Q'+xc+' '+(hy+dip)+' '+x1+' '+hy+' L'+x1+' '+ft+' Z" fill="url(#'+fillRef+')"/>';
+    if(i>0) body += '<line x1="'+x0+'" y1="'+ft+'" x2="'+x0+'" y2="'+hy+'" stroke="rgba(90,70,42,.16)" stroke-width="1"/>';
+  }
+  let hdr='';
+  if(c.header==='pencil'){
+    const ty=c.tall?58:48, step=fw/3;
+    hdr += '<rect x="'+mx+'" y="15" width="'+(W-2*mx)+'" height="'+(ty-15)+'" rx="3" fill="#efe4c8" stroke="#d6c096" stroke-width="1"/>';
+    for(let g=0; g<=n*3; g++){ const x=mx+g*step; hdr+='<line x1="'+x+'" y1="17" x2="'+x+'" y2="'+(ty-2)+'" stroke="rgba(92,72,44,.26)" stroke-width="1"/>'; }
+  } else if(c.header==='pinch'){
+    for(let i=0;i<n;i++){ const xc=mx+i*fw+fw/2, py=52;
+      hdr += '<path d="M'+(xc-fw*0.4)+' 18 L'+xc+' '+py+' L'+(xc+fw*0.4)+' 18" fill="none" stroke="rgba(92,72,44,.33)" stroke-width="1.3"/>';
+      hdr += '<line x1="'+xc+'" y1="18" x2="'+xc+'" y2="'+py+'" stroke="rgba(92,72,44,.28)" stroke-width="1"/>';
+      hdr += '<circle cx="'+xc+'" cy="'+py+'" r="3.2" fill="#b4925f"/>';
+    }
+  } else if(c.header==='wave'){
+    hdr += '<rect x="'+(mx-2)+'" y="7" width="'+(W-2*mx+4)+'" height="7" rx="3" fill="#9c7a46"/>';
+    for(let i=0;i<=n;i++){ const x=mx+i*fw; hdr+='<circle cx="'+x+'" cy="11" r="3" fill="#7d5f34"/>'; }
+    let d='M'+mx+' 26'; for(let i=0;i<n;i++){ const x0=mx+i*fw; d+=' Q '+(x0+fw/2)+' 16 '+(x0+fw)+' 26'; }
+    hdr += '<path d="'+d+'" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2"/>';
+  } else if(c.header==='cascade'){
+    hdr += '<rect x="'+mx+'" y="15" width="'+(W-2*mx)+'" height="26" rx="3" fill="#efe4c8" stroke="#d6c096" stroke-width="1"/>';
+    for(let g=0; g<=n*2; g++){ const x=mx+g*(fw/2); hdr+='<line x1="'+x+'" y1="17" x2="'+x+'" y2="39" stroke="rgba(92,72,44,.22)" stroke-width="1"/>'; }
+  } else if(c.header==='panel'){
+    hdr += '<rect x="6" y="7" width="'+(W-12)+'" height="8" rx="3" fill="#9c7a46"/>';
+    for(let i=0;i<=n;i++){ const x=mx+i*fw; hdr+='<circle cx="'+x+'" cy="11" r="3.4" fill="none" stroke="#7d5f34" stroke-width="2"/>'; }
+  }
+  let rod='';
+  if(c.header==='pinch'||c.header==='pencil'||c.header==='cascade'){
+    rod = '<rect x="6" y="6" width="'+(W-12)+'" height="8" rx="4" fill="#a9854f"/>'+
+          '<circle cx="9" cy="10" r="5" fill="#8a6a3e"/><circle cx="'+(W-9)+'" cy="10" r="5" fill="#8a6a3e"/>';
+  }
+  const defs =
+    '<linearGradient id="fd-'+sfx+'" x1="0" y1="0" x2="1" y2="0">'+
+      '<stop offset="0" stop-color="#b3965f"/><stop offset=".2" stop-color="#ddcaa4"/>'+
+      '<stop offset=".5" stop-color="#f8f0e0"/><stop offset=".8" stop-color="#ddcaa4"/>'+
+      '<stop offset="1" stop-color="#ac9059"/></linearGradient>'+
+    '<linearGradient id="ff-'+sfx+'" x1="0" y1="0" x2="1" y2="0">'+
+      '<stop offset="0" stop-color="#cbb88f"/><stop offset=".5" stop-color="#f3ead7"/><stop offset="1" stop-color="#c6af82"/></linearGradient>'+
+    '<linearGradient id="bg-'+sfx+'" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="#e7eff1"/><stop offset=".5" stop-color="#eef2ea"/><stop offset="1" stop-color="#f6eedd"/></linearGradient>'+
+    '<radialGradient id="gl-'+sfx+'" cx="0.7" cy="0.18" r="0.6">'+
+      '<stop offset="0" stop-color="#fff7e4" stop-opacity=".9"/><stop offset="1" stop-color="#fff7e4" stop-opacity="0"/></radialGradient>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMin slice" style="position:absolute;inset:0;width:100%;height:100%;display:block"><defs>'+defs+'</defs>'+
+    '<rect width="'+W+'" height="'+H+'" fill="url(#bg-'+sfx+')"/>'+
+    '<rect width="'+W+'" height="'+H+'" fill="url(#gl-'+sfx+')"/>'+
+    '<rect x="0" y="'+(H-14)+'" width="'+W+'" height="14" fill="#dcc9a6"/>'+
+    '<g>'+body+'</g>'+hdr+rod+'</svg>';
+}
+
 function calc(){
   const wcm = Math.max(10, +document.getElementById('w').value || 0);
   const hcm = Math.max(50, +document.getElementById('h').value || 0);
@@ -653,8 +735,7 @@ function renderGallery(){
     <div class="card">
       <div class="thumb">
         ${s.premium?'<span class="tag-premium">יוקרה</span>':''}
-        <div class="win"></div>
-        <div class="cur ${s.fold}"><div class="heading"></div></div>
+        ${curtainSVG(s.fold)}
       </div>
       <div class="body">
         <h3>${s.name}</h3>
@@ -685,6 +766,9 @@ function renderPicker(){
 function selectStyle(id){
   current = STYLES.find(s=>s.id===id) || STYLES[0];
   document.querySelectorAll('.spill').forEach(el=>el.classList.toggle('active', el.dataset.id===id));
+  const prev = curtainSVG(current.fold);
+  const cp = document.getElementById('cPrev'); if(cp) cp.innerHTML = prev + '<span class="cprev-chip">'+current.name+'</span>';
+  const ot = document.getElementById('oThumb'); if(ot) ot.innerHTML = curtainSVG(current.fold);
   calc();
 }
 
