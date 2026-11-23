@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>סגירת עסק בקלות | עוסק פטור ועוסק מורשה</title>
+  <meta name="description" content="שירות דיגיטלי לסגירת עסק עצמאי בישראל — מילוי חד-פעמי של כל המידע, יצירת הטפסים לכל הרשויות (מע״מ, מס הכנסה, ביטוח לאומי) ותוכנית הגשה מודרכת." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%85%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-logo">🗂️</div>
+        <div class="brand-text">
+          <h1>סגירת עסק בקלות</h1>
+          <p>עוסק פטור · עוסק מורשה — מול כל הרשויות</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="ghost-btn" id="resetBtn" title="התחל מחדש ומחק את כל הנתונים">🗑️ התחל מחדש</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="progress no-print" id="progress"></div>
+    <div id="app"></div>
+    <!-- Printable documents injected here -->
+    <div class="print-only" id="printArea"></div>
+    <p class="foot-note no-print">
+      השירות פועל במלואו בדפדפן שלך — <strong>המידע נשמר רק במכשיר שלך</strong> ואינו נשלח לשום שרת.<br>
+      זהו כלי עזר בלבד להכנת המסמכים וההגשה. אינו מהווה ייעוץ מס/משפטי, ואינו מגיש בשמך לרשויות.<br>
+      מקורות רשמיים: <a href="https://www.gov.il" target="_blank" rel="noopener">gov.il</a> ·
+      <a href="https://www.gov.il/he/departments/israel_tax_authority" target="_blank" rel="noopener">רשות המסים</a> ·
+      <a href="https://www.btl.gov.il" target="_blank" rel="noopener">ביטוח לאומי</a>
+    </p>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
