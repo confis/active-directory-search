@@ -57,6 +57,20 @@
   }
   function yn(v) { return v === "yes" ? "כן" : v === "no" ? "לא" : "—"; }
 
+  // אימות מספר תעודת זהות ישראלי לפי ספרת ביקורת (אלגוריתם לוהן)
+  function validIsraeliId(v) {
+    v = String(v == null ? "" : v).trim();
+    if (!/^\d{1,9}$/.test(v)) return false;
+    v = v.padStart(9, "0");
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      let n = Number(v[i]) * ((i % 2) + 1);
+      if (n > 9) n -= 9;
+      sum += n;
+    }
+    return sum % 10 === 0;
+  }
+
   function toast(msg) {
     toastEl.textContent = msg;
     toastEl.classList.add("show");
@@ -700,13 +714,21 @@
         inp.classList.add("invalid"); if (err) err.classList.add("show"); ok = false;
       } else { inp.classList.remove("invalid"); if (err) err.classList.remove("show"); }
     });
-    // id number basic check on details step
+    // id number check-digit validation on details step
     if (S.step === 1) {
       const idInp = app.querySelector('[data-key="idNumber"]');
-      if (idInp && idInp.value.trim() && !/^\d{5,9}$/.test(idInp.value.trim())) {
+      if (idInp && idInp.value.trim() && !validIsraeliId(idInp.value.trim())) {
         idInp.classList.add("invalid");
         const err = idInp.parentElement.querySelector(".err");
-        if (err) { err.textContent = "מספר ת.ז. לא תקין"; err.classList.add("show"); }
+        if (err) { err.textContent = "מספר ת.ז. לא תקין — בדוק/י את הספרות (ספרת ביקורת שגויה)"; err.classList.add("show"); }
+        ok = false;
+      }
+      // osek number: if it equals an ID-length number, validate the check digit too
+      const osekInp = app.querySelector('[data-key="osekNumber"]');
+      if (osekInp && osekInp.value.trim() && /^\d{9}$/.test(osekInp.value.trim()) && !validIsraeliId(osekInp.value.trim())) {
+        osekInp.classList.add("invalid");
+        const err = osekInp.parentElement.querySelector(".err");
+        if (err) { err.textContent = "מספר עוסק בן 9 ספרות אינו עובר ביקורת — ודא/י שהוא נכון"; err.classList.add("show"); }
         ok = false;
       }
     }
