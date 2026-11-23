@@ -1,0 +1,9 @@
+forms/node_modules/
+forms/*.png
+forms/*.pgm
+forms/*.html
+forms/out_*.pdf
+forms/web_out.pdf
+forms/heebo.ttf
+forms/package.json
+forms/package-lock.json

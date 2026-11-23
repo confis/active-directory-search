@@ -507,8 +507,9 @@
           <ol class="step-list">${a.steps.map(s => `<li>${s}</li>`).join("")}</ol>
           ${a.flags.length ? `<div class="flags">${a.flags.map(([t, txt]) => `<div class="flag ${t}"><span>${t === 'warn' ? '⚠️' : '💡'}</span><span>${txt}</span></div>`).join("")}</div>` : ""}
           <div class="doc-links">
-            <button class="doc-link" data-print="${a.key}">🖨️ הורד/הדפס את הטופס של ${a.name.split(" ")[0]}</button>
-            ${a.links.map(([txt, url, primary]) => `<a class="doc-link ${primary ? '' : 'sec'}" href="${url}" target="_blank" rel="noopener">🔗 ${txt}</a>`).join("")}
+            ${a.key === "vat" ? `<button class="doc-link" data-fill-vat style="background:#16a06a">📥 טופס מע״מ 18 הרשמי — ממולא (PDF)</button>` : ""}
+            <button class="doc-link ${a.key === "vat" ? "sec" : ""}" data-print="${a.key}">🖨️ הורד/הדפס טופס מרוכז</button>
+            ${a.links.map(([txt, url, primary]) => `<a class="doc-link sec" href="${url}" target="_blank" rel="noopener">🔗 ${txt}</a>`).join("")}
           </div>
         </div>
       </div>`).join("");
@@ -786,6 +787,16 @@
     app.querySelectorAll("[data-print]").forEach(b => b.addEventListener("click", (e) => {
       e.stopPropagation(); doPrint(b.getAttribute("data-print"));
     }));
+    const fv = app.querySelector("[data-fill-vat]");
+    if (fv) fv.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!window.fillOfficialVat) { toast("הרכיב עדיין נטען — נסה/י שוב בעוד רגע"); return; }
+      const orig = fv.textContent;
+      fv.textContent = "⏳ מכין את הטופס...";
+      try { await window.fillOfficialVat(D()); toast("טופס מע״מ 18 הרשמי ירד למכשיר"); }
+      catch (err) { console.error(err); toast("שגיאה ביצירת הטופס — בדוק/י חיבור לרשת"); }
+      finally { fv.textContent = orig; }
+    });
     ["#printAll", "#printAll2"].forEach(sel => {
       const b = app.querySelector(sel); if (b) b.addEventListener("click", () => doPrint(null));
     });
