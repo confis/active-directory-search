@@ -1,69 +1,75 @@
-/* Client-side filler for the official VAT form 18 (הודעה על סגירת עסק).
-   Overlays text onto the flat government PDF using pdf-lib + Heebo.
-   Exposes window.fillOfficialVat(data, filename). */
+/* Client-side filler for the official Israeli closure forms (flat PDFs).
+   Overlays text with pdf-lib + embedded Heebo. All in-browser, no server.
+   Exposes window.fillOfficialVat(data) and window.fillOfficialTax(data). */
 (function () {
   "use strict";
-  const PAGE_H = 842;
-  const BOX = [41.8, 59.2, 76.6, 93.8, 111.2, 128.4, 145.6, 163.0, 180.4];
 
   // logical Hebrew -> visual order (reverse letter runs, keep digit runs LTR)
   function toVisual(s) {
     if (!s) return "";
     const segs = String(s).match(/([0-9][0-9.,\/\-]*)|([^0-9]+)/g) || [];
     let out = "";
-    for (let i = segs.length - 1; i >= 0; i--) {
-      const seg = segs[i];
-      out += /^[0-9]/.test(seg) ? seg : seg.split("").reverse().join("");
-    }
+    for (let i = segs.length - 1; i >= 0; i--)
+      out += /^[0-9]/.test(segs[i]) ? segs[i] : segs[i].split("").reverse().join("");
     return out;
   }
-  function fmtDate(v) {
-    if (!v) return "";
-    const p = String(v).split("-");
-    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : v;
+  const fmtDate = (v) => { const p = String(v || "").split("-"); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : (v || ""); };
+  const dparts = (v) => { const p = String(v || "").split("-"); return p.length === 3 ? { d: p[2], m: p[1], y: p[0] } : { d: "", m: "", y: "" }; };
+  const todayStr = () => { const t = new Date(); return `${String(t.getDate()).padStart(2, "0")}/${String(t.getMonth() + 1).padStart(2, "0")}/${t.getFullYear()}`; };
+
+  let fontBytes = null;
+  const tplCache = {};
+  async function getFont() {
+    if (!fontBytes) fontBytes = await fetch("assets/heebo.ttf").then(r => r.arrayBuffer());
+    return fontBytes;
+  }
+  async function getTpl(url) {
+    if (!tplCache[url]) tplCache[url] = await fetch(url).then(r => r.arrayBuffer());
+    return tplCache[url];
   }
 
-  let cache = null;
-  async function load() {
-    if (cache) return cache;
-    const [pdfBytes, fontBytes] = await Promise.all([
-      fetch("assets/vat18.pdf").then(r => r.arrayBuffer()),
-      fetch("assets/heebo.ttf").then(r => r.arrayBuffer())
-    ]);
-    cache = { pdfBytes, fontBytes };
-    return cache;
-  }
-
-  async function fillOfficialVat(d, filename) {
+  async function prepare(tplUrl) {
     if (!window.PDFLib || !window.fontkit) throw new Error("libraries not loaded");
     const { PDFDocument, rgb } = window.PDFLib;
-    const { pdfBytes, fontBytes } = await load();
-    const pdf = await PDFDocument.load(pdfBytes);
+    const [tplBytes, fBytes] = await Promise.all([getTpl(tplUrl), getFont()]);
+    const pdf = await PDFDocument.load(tplBytes);
     pdf.registerFontkit(window.fontkit);
-    const font = await pdf.embedFont(fontBytes, { subset: false });
-    const [p1, p2] = pdf.getPages();
+    const font = await pdf.embedFont(fBytes, { subset: false });
     const INK = rgb(0.05, 0.10, 0.45);
-
+    const H = pdf.getPages()[0].getHeight();
     const put = (page, text, xRef, yTop, size, mode) => {
       if (text === "" || text == null) return;
-      const vis = toVisual(text);
-      const w = font.widthOfTextAtSize(vis, size);
-      let x = xRef;
-      if (mode === "right") x = xRef - w;
-      else if (mode === "center") x = xRef - w / 2;
-      page.drawText(vis, { x, y: PAGE_H - yTop, size, font, color: INK });
+      const vis = toVisual(text), w = font.widthOfTextAtSize(vis, size);
+      let x = xRef; if (mode === "right") x = xRef - w; else if (mode === "center") x = xRef - w / 2;
+      page.drawText(vis, { x, y: H - yTop, size, font, color: INK });
     };
-    const digits = (page, num, yTop, size) => {
+    const digits = (page, num, centers, yTop, size) => {
       const s = String(num || "").replace(/\D/g, "");
-      for (let i = 0; i < s.length && i < BOX.length; i++) {
+      for (let i = 0; i < s.length && i < centers.length; i++) {
         const w = font.widthOfTextAtSize(s[i], size);
-        page.drawText(s[i], { x: BOX[i] - w / 2, y: PAGE_H - yTop, size, font, color: INK });
+        page.drawText(s[i], { x: centers[i] - w / 2, y: H - yTop, size, font, color: INK });
       }
     };
+    return { pdf, put, digits };
+  }
 
-    // Page 1
-    digits(p1, d.osekNumber, 93.5, 11);
-    digits(p1, d.idNumber || d.osekNumber, 114.5, 11);
+  async function download(pdf, filename) {
+    const bytes = await pdf.save();
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  /* ---------- VAT form 18 ---------- */
+  async function fillOfficialVat(d) {
+    const { pdf, put, digits } = await prepare("assets/vat18.pdf");
+    const [p1, p2] = pdf.getPages();
+    const BOX = [41.8, 59.2, 76.6, 93.8, 111.2, 128.4, 145.6, 163.0, 180.4];
+    digits(p1, d.osekNumber, BOX, 93.5, 11);
+    digits(p1, d.idNumber || d.osekNumber, BOX, 114.5, 11);
     put(p1, d.bizName || d.fullName, 455, 92, 11, "right");
     put(p1, d.fullName, 463, 113, 11, "right");
     put(p1, d.bizAddress, 463, 132, 11, "right");
@@ -71,19 +77,29 @@
     put(p1, d.bizField, 463, 147, 11, "right");
     put(p1, d.bizAddress, 390, 162, 11, "right");
     put(p1, fmtDate(d.cessationDate), 292, 179, 11, "right");
-    // Page 2 signature row
-    put(p2, fmtDate(new Date().toISOString().slice(0, 10)), 476, 80, 11, "center");
+    put(p2, todayStr(), 476, 80, 11, "center");
     put(p2, d.fullName, 291, 80, 11, "center");
+    await download(pdf, `טופס-מעמ-18-${d.osekNumber || "closure"}.pdf`);
+  }
 
-    const bytes = await pdf.save();
-    const blob = new Blob([bytes], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename || `טופס-מעמ-18-${d.osekNumber || "closure"}.pdf`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  /* ---------- Income-tax form 2550 ---------- */
+  async function fillOfficialTax(d) {
+    const { pdf, put, digits } = await prepare("assets/tax2550.pdf");
+    const pg = pdf.getPages()[0];
+    const ZID = [334.2, 345.5, 356.8, 368.2, 379.5, 390.8, 402.2, 413.6, 425.0];
+    const cd = dparts(d.cessationDate);
+    put(pg, cd.d, 483, 285, 10, "center");
+    put(pg, cd.m, 500, 285, 10, "center");
+    put(pg, cd.y, 520, 285, 10, "center");
+    put(pg, d.bizAddress, 216, 301, 10, "right");          // כתובת העסק (closure)
+    put(pg, d.fullName, 490, 764, 10, "center");           // שם מלא
+    digits(pg, d.idNumber || d.osekNumber, ZID, 766, 10);  // מספר זהות
+    put(pg, d.bizAddress, 230, 764, 10, "center");         // כתובת
+    put(pg, d.phone, 83, 764, 10, "center");               // מספר טלפון
+    put(pg, todayStr(), 485, 790, 10, "center");           // תאריך
+    await download(pdf, `טופס-2550-${d.osekNumber || "closure"}.pdf`);
   }
 
   window.fillOfficialVat = fillOfficialVat;
+  window.fillOfficialTax = fillOfficialTax;
 })();

@@ -507,8 +507,9 @@
           <ol class="step-list">${a.steps.map(s => `<li>${s}</li>`).join("")}</ol>
           ${a.flags.length ? `<div class="flags">${a.flags.map(([t, txt]) => `<div class="flag ${t}"><span>${t === 'warn' ? '⚠️' : '💡'}</span><span>${txt}</span></div>`).join("")}</div>` : ""}
           <div class="doc-links">
-            ${a.key === "vat" ? `<button class="doc-link" data-fill-vat style="background:#16a06a">📥 טופס מע״מ 18 הרשמי — ממולא (PDF)</button>` : ""}
-            <button class="doc-link ${a.key === "vat" ? "sec" : ""}" data-print="${a.key}">🖨️ הורד/הדפס טופס מרוכז</button>
+            ${a.key === "vat" ? `<button class="doc-link" data-fill="vat" style="background:#16a06a">📥 טופס מע״מ 18 הרשמי — ממולא (PDF)</button>` : ""}
+            ${a.key === "tax" ? `<button class="doc-link" data-fill="tax" style="background:#16a06a">📥 טופס 2550 הרשמי — ממולא (PDF)</button>` : ""}
+            <button class="doc-link ${(a.key === "vat" || a.key === "tax") ? "sec" : ""}" data-print="${a.key}">🖨️ הורד/הדפס טופס מרוכז</button>
             ${a.links.map(([txt, url, primary]) => `<a class="doc-link sec" href="${url}" target="_blank" rel="noopener">🔗 ${txt}</a>`).join("")}
           </div>
         </div>
@@ -787,16 +788,18 @@
     app.querySelectorAll("[data-print]").forEach(b => b.addEventListener("click", (e) => {
       e.stopPropagation(); doPrint(b.getAttribute("data-print"));
     }));
-    const fv = app.querySelector("[data-fill-vat]");
-    if (fv) fv.addEventListener("click", async (e) => {
+    app.querySelectorAll("[data-fill]").forEach(fb => fb.addEventListener("click", async (e) => {
       e.stopPropagation();
-      if (!window.fillOfficialVat) { toast("הרכיב עדיין נטען — נסה/י שוב בעוד רגע"); return; }
-      const orig = fv.textContent;
-      fv.textContent = "⏳ מכין את הטופס...";
-      try { await window.fillOfficialVat(D()); toast("טופס מע״מ 18 הרשמי ירד למכשיר"); }
+      const kind = fb.getAttribute("data-fill");
+      const fn = kind === "tax" ? window.fillOfficialTax : window.fillOfficialVat;
+      const label = kind === "tax" ? "טופס 2550" : "טופס מע״מ 18";
+      if (!fn) { toast("הרכיב עדיין נטען — נסה/י שוב בעוד רגע"); return; }
+      const orig = fb.textContent;
+      fb.textContent = "⏳ מכין את הטופס...";
+      try { await fn(D()); toast(label + " הרשמי ירד למכשיר"); }
       catch (err) { console.error(err); toast("שגיאה ביצירת הטופס — בדוק/י חיבור לרשת"); }
-      finally { fv.textContent = orig; }
-    });
+      finally { fb.textContent = orig; }
+    }));
     ["#printAll", "#printAll2"].forEach(sel => {
       const b = app.querySelector(sel); if (b) b.addEventListener("click", () => doPrint(null));
     });
