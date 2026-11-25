@@ -56,7 +56,8 @@
         page.drawText(s[i], { x: centers[i] - w / 2, y: H - yTop, size, font, color: INK });
       }
     };
-    return { pdf, put, digits };
+    const check = (page, cx, yTop) => { const w = font.widthOfTextAtSize("X", 9); page.drawText("X", { x: cx - w / 2, y: H - yTop, size: 9, font, color: INK }); };
+    return { pdf, put, digits, check };
   }
 
   async function download(pdf, filename) {
@@ -90,9 +91,22 @@
 
   /* ---------- Income-tax form 2550 ---------- */
   async function fillOfficialTax(d) {
-    const { pdf, put, digits } = await prepare("assets/tax2550.pdf");
+    const { pdf, put, digits, check } = await prepare("assets/tax2550.pdf");
     const pg = pdf.getPages()[0];
     const ZID = [334.2, 345.5, 356.8, 368.2, 379.5, 390.8, 402.2, 413.6, 425.0];
+    // conditional checkboxes driven by the answers
+    check(pg, 546, 246);                                 // פרטים על הפסקת הפעילות (always)
+    const r = d.cessationReason;
+    if (r === "sold") check(pg, 308, 270);
+    else if (r === "rentedBusiness") check(pg, 223, 270);
+    else if (r === "newCompany") check(pg, 137, 270);
+    else if (r === "rentedApartment") check(pg, 453, 270);
+    else if (r === "ceasedEmployee") check(pg, 453, 284);
+    if (r === "sold") check(pg, 546, 330);               // העסק נמכר
+    if (r === "rentedBusiness") check(pg, 546, 370);      // העסק הושכר
+    if (d.alsoEmployee === "yes") check(pg, 546, 410);    // שכיר/ה
+    if (d.otherIncome === "yes") check(pg, 546, 600);     // הכנסות אחרות שלי
+    if (d.employees === "yes") check(pg, 531, 682);       // הפסקת העסקת עובדים
     const cd = dparts(d.cessationDate);
     put(pg, cd.d, 483, 285, 10, "center");
     put(pg, cd.m, 500, 285, 10, "center");

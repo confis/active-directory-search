@@ -19,7 +19,7 @@
       businessType: "",      // 'patur' | 'murshe'
       fullName: "", idNumber: "", osekNumber: "", phone: "", email: "",
       bizName: "", bizAddress: "", bizField: "",
-      openDate: "", cessationDate: "",
+      openDate: "", cessationDate: "", cessationReason: "",
       activity2026: "", incomeInClosingYear: "",
       unreportedDocs: "", debts: "", debtsDetail: "",
       hasStock: "", hasEquipment: "", assetsDetail: "",
@@ -56,6 +56,10 @@
     return v;
   }
   function yn(v) { return v === "yes" ? "כן" : v === "no" ? "לא" : "—"; }
+  function reasonLabel(v) {
+    return ({ plainClosure: "סגירה / חדילת פעילות", sold: "מכירת העסק", rentedBusiness: "השכרת העסק",
+      newCompany: "הקמת חברה חדשה", rentedApartment: "השכרת דירה למגורים", ceasedEmployee: "חדלתי להיות שכיר בעל שליטה" }[v]) || "—";
+  }
 
   // אימות מספר תעודת זהות ישראלי לפי ספרת ביקורת (אלגוריתם לוהן)
   function validIsraeliId(v) {
@@ -187,6 +191,12 @@
       ${choiceField("incomeInClosingYear", "האם היו הכנסות בשנת הסגירה?", d.incomeInClosingYear,
         [["yes", "כן, היו הכנסות"], ["no", "לא היו הכנסות"]])}
 
+      <div class="section-title">סיבת הפסקת הפעילות</div>
+      <p class="hint" style="margin:-8px 0 10px">נשתמש בזה כדי לסמן אוטומטית את התיבה המתאימה בטופס 2550.</p>
+      ${choiceField("cessationReason", "מהי סיבת הסגירה?", d.cessationReason,
+        [["plainClosure", "סגירה / חדילת פעילות"], ["sold", "מכירת העסק"], ["rentedBusiness", "השכרת העסק"],
+         ["newCompany", "הקמת חברה חדשה"], ["rentedApartment", "השכרת דירה למגורים"], ["ceasedEmployee", "חדלתי להיות שכיר בעל שליטה"]])}
+
       <div class="alert alert-warn" style="margin-top:20px">
         <span class="ai">⚠️</span>
         <div><strong>שים לב</strong>אין לציין "אפס הכנסות" או "ללא פעילות" אם זה אינו נכון. דיווח לא מדויק לרשויות עלול לגרור קנסות. דווח את המצב כפי שהוא בפועל.</div>
@@ -314,6 +324,7 @@
         <h3>📅 פעילות <button class="edit-link" data-goto="2">עריכה</button></h3>
         <table class="review-table">
           ${row("תאריך הפסקת פעילות", fmtDate(d.cessationDate))}
+          ${row("סיבת ההפסקה", reasonLabel(d.cessationReason))}
           ${row("פעילות בשנת הסגירה", yn(d.activity2026))}
           ${row("הכנסות בשנת הסגירה", yn(d.incomeInClosingYear))}
         </table>
@@ -488,6 +499,25 @@
     return issues;
   }
 
+  function manualNote(key) {
+    const d = D();
+    let items = [];
+    if (key === "vat") {
+      items = ["חתימה (עמ׳ 2)", "המבנה ששימש את העסק — בבעלותי / בשכירות"];
+      if (d.hasStock === "yes" || d.hasEquipment === "yes") items.push("טבלאות המלאי/הציוד (סעיף ב) — פירוט הפריטים ושוויים");
+      if (d.cessationReason === "sold") items.push("סימון \"מכרתי את העסק כולל המלאי\" + פרטי הרוכש");
+      items.push("תיבות הצהרה על בעלות בעסק אחר (אם רלוונטי)");
+    } else {
+      items = ["חתימה", "מספר תיק (בראש הטופס)"];
+      if (d.cessationReason === "sold") items.push("פרטי הרוכש, תאריך וסכום המכירה (סעיף \"העסק נמכר\")");
+      if (d.cessationReason === "rentedBusiness") items.push("פרטי השוכר (סעיף \"העסק הושכר\")");
+      if (d.alsoEmployee === "yes") items.push("שם וכתובת המעביד (סעיף \"שכיר/ה\")");
+      if (d.otherIncome === "yes") items.push("פירוט ההכנסות הנוספות");
+    }
+    return `<details class="manual-note"><summary>ℹ️ שדות להשלמה ידנית לפני ההגשה (${items.length})</summary>
+      <ul>${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul></details>`;
+  }
+
   function stepResult() {
     const auths = buildAuthorities();
     const d = D();
@@ -512,6 +542,7 @@
             <button class="doc-link ${(a.key === "vat" || a.key === "tax") ? "sec" : ""}" data-print="${a.key}">🖨️ הורד/הדפס טופס מרוכז</button>
             ${a.links.map(([txt, url, primary]) => `<a class="doc-link sec" href="${url}" target="_blank" rel="noopener">🔗 ${txt}</a>`).join("")}
           </div>
+          ${(a.key === "vat" || a.key === "tax") ? manualNote(a.key) : ""}
         </div>
       </div>`).join("");
 

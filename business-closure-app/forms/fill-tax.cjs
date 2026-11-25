@@ -38,6 +38,21 @@ const dparts = (v) => { const p = String(v || "").split("-"); return p.length ==
     }
   };
 
+  const check = (cx, yTop) => { const w = font.widthOfTextAtSize("X", 9); pg.drawText("X", { x: cx - w / 2, y: PAGE_H - yTop, size: 9, font, color: INK }); };
+  // conditional checkboxes driven by the answers
+  check(546, 246);                                   // "פרטים על הפסקת הפעילות" (always)
+  const r = d.cessationReason;
+  if (r === "sold") check(308, 270);
+  else if (r === "rentedBusiness") check(223, 270);
+  else if (r === "newCompany") check(137, 270);
+  else if (r === "rentedApartment") check(453, 270);
+  else if (r === "ceasedEmployee") check(453, 284);
+  if (r === "sold") check(546, 330);                 // header: העסק נמכר
+  if (r === "rentedBusiness") check(546, 370);        // header: העסק הושכר
+  if (d.alsoEmployee === "yes") check(546, 410);      // header: שכיר/ה
+  if (d.otherIncome === "yes") check(546, 600);       // header: הכנסות אחרות שלי
+  if (d.employees === "yes") check(531, 682);         // הפסקת העסקת עובדים
+
   // closure date (dd / mm / yyyy) around slashes at x491.5 & x507.5, y~276
   const cd = dparts(d.cessationDate);
   put(cd.d, 483, 285, 10, "center");

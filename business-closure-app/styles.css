@@ -231,6 +231,13 @@ textarea { resize: vertical; min-height: 70px; }
 .doc-link.sec { background: #fff; color: var(--brand); border: 1.5px solid var(--brand); }
 .doc-link.sec:hover { background: var(--brand-soft); }
 
+.manual-note { margin-top: 14px; background: #fafcff; border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; font-size: 13px; }
+.manual-note summary { cursor: pointer; font-weight: 700; color: var(--ink-soft); padding: 8px 0; list-style: none; }
+.manual-note summary::-webkit-details-marker { display: none; }
+.manual-note[open] summary { color: var(--brand-dark); }
+.manual-note ul { margin: 2px 18px 12px; color: var(--ink-soft); }
+.manual-note li { margin-bottom: 5px; }
+
 .flags { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
 .flag { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; padding: 10px 13px; border-radius: 9px; }
 .flag.warn { background: var(--warn-soft); color: #8a5a10; }
