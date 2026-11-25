@@ -25,6 +25,9 @@
       hasStock: "", hasEquipment: "", assetsDetail: "",
       employees: "", withholdingFile: "",
       alsoEmployee: "", otherIncome: "", overpaid: "",
+      buyerName: "", buyerId: "", saleDate: "", saleAmount: "",
+      employerName: "", employerAddress: "",
+      otherIncomeSource: "", otherIncomeAmount: "",
       notes: ""
     },
     tracking: {},   // key -> {status, ref}
@@ -197,6 +200,15 @@
         [["plainClosure", "סגירה / חדילת פעילות"], ["sold", "מכירת העסק"], ["rentedBusiness", "השכרת העסק"],
          ["newCompany", "הקמת חברה חדשה"], ["rentedApartment", "השכרת דירה למגורים"], ["ceasedEmployee", "חדלתי להיות שכיר בעל שליטה"]])}
 
+      <div class="reveal ${d.cessationReason === 'sold' ? 'show' : ''}" data-reveal="sold">
+        <div class="field-grid" style="margin-top:4px">
+          ${textField("buyerName", "שם הרוכש", d.buyerName, false, "שם פרטי ומשפחה")}
+          ${textField("buyerId", "ת.ז. / ח.פ. של הרוכש", d.buyerId, false, "", "inputmode=numeric")}
+          ${dateField("saleDate", "תאריך המכירה", d.saleDate, false)}
+          ${textField("saleAmount", "סכום המכירה (₪)", d.saleAmount, false, "", "inputmode=numeric")}
+        </div>
+      </div>
+
       <div class="alert alert-warn" style="margin-top:20px">
         <span class="ai">⚠️</span>
         <div><strong>שים לב</strong>אין לציין "אפס הכנסות" או "ללא פעילות" אם זה אינו נכון. דיווח לא מדויק לרשויות עלול לגרור קנסות. דווח את המצב כפי שהוא בפועל.</div>
@@ -279,8 +291,22 @@
       ${choiceField("alsoEmployee", "האם אתה עובד גם כשכיר במקביל?", d.alsoEmployee,
         [["yes", "כן, גם שכיר"], ["no", "לא, רק עצמאי"]])}
 
+      <div class="reveal ${d.alsoEmployee === 'yes' ? 'show' : ''}" data-reveal="employer">
+        <div class="field-grid" style="margin:-4px 0 16px">
+          ${textField("employerName", "שם המעביד", d.employerName, false, "למילוי בטופס 2550")}
+          ${textField("employerAddress", "כתובת המעביד", d.employerAddress, false)}
+        </div>
+      </div>
+
       ${choiceField("otherIncome", "האם קיימות הכנסות נוספות (שכירות, פנסיה, קצבה וכו׳)?", d.otherIncome,
         [["yes", "כן"], ["no", "לא"]])}
+
+      <div class="reveal ${d.otherIncome === 'yes' ? 'show' : ''}" data-reveal="otherinc">
+        <div class="field-grid" style="margin:-4px 0 16px">
+          ${textField("otherIncomeSource", "מקור ההכנסה הנוספת", d.otherIncomeSource, false, "לדוגמה: שכר דירה")}
+          ${textField("otherIncomeAmount", "הכנסה שנתית (₪)", d.otherIncomeAmount, false, "", "inputmode=numeric")}
+        </div>
+      </div>
 
       ${choiceField("overpaid", "האם ייתכן ששילמת דמי ביטוח לאומי ביתר השנה?", d.overpaid,
         [["yes", "כן / ייתכן"], ["no", "לא"], ["unknown", "לא יודע/ת"]])}
@@ -508,11 +534,8 @@
       if (d.cessationReason === "sold") items.push("סימון \"מכרתי את העסק כולל המלאי\" + פרטי הרוכש");
       items.push("תיבות הצהרה על בעלות בעסק אחר (אם רלוונטי)");
     } else {
-      items = ["חתימה", "מספר תיק (בראש הטופס)"];
-      if (d.cessationReason === "sold") items.push("פרטי הרוכש, תאריך וסכום המכירה (סעיף \"העסק נמכר\")");
+      items = ["חתימה", "מספר תיק (בראש הטופס) — אם ידוע לך"];
       if (d.cessationReason === "rentedBusiness") items.push("פרטי השוכר (סעיף \"העסק הושכר\")");
-      if (d.alsoEmployee === "yes") items.push("שם וכתובת המעביד (סעיף \"שכיר/ה\")");
-      if (d.otherIncome === "yes") items.push("פירוט ההכנסות הנוספות");
     }
     return `<details class="manual-note"><summary>ℹ️ שדות להשלמה ידנית לפני ההגשה (${items.length})</summary>
       <ul>${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul></details>`;
@@ -857,7 +880,13 @@
 
   function handleReveals() {
     const d = D();
-    const map = { debts: d.debts === "yes", assets: (d.hasStock === "yes" || d.hasEquipment === "yes") };
+    const map = {
+      debts: d.debts === "yes",
+      assets: (d.hasStock === "yes" || d.hasEquipment === "yes"),
+      sold: d.cessationReason === "sold",
+      employer: d.alsoEmployee === "yes",
+      otherinc: d.otherIncome === "yes"
+    };
     app.querySelectorAll("[data-reveal]").forEach(r => {
       r.classList.toggle("show", !!map[r.getAttribute("data-reveal")]);
     });

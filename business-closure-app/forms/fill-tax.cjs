@@ -70,6 +70,28 @@ const dparts = (v) => { const p = String(v || "").split("-"); return p.length ==
   const todayStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
   put(todayStr, 485, 790, 10, "center");
 
+  // ----- conditional text sections -----
+  if (d.cessationReason === "sold") {
+    const parts = String(d.buyerName || "").trim().split(/\s+/);
+    const first = parts.shift() || "";
+    put(first, 490, 356, 9, "center");          // שם פרטי
+    put(parts.join(" "), 392, 356, 9, "center"); // שם משפחה
+    put(d.buyerId, 292, 356, 9, "center");      // מספר זהות/ח.פ
+    const sd = dparts(d.saleDate);
+    put(sd.d, 186, 356, 9, "center");           // day (left)
+    put(sd.m, 200, 356, 9, "center");           // month (mid)
+    put(sd.y ? sd.y.slice(-2) : "", 216, 356, 9, "center"); // year (right)
+    put(d.saleAmount, 95, 356, 9, "center");    // סכום המכירה
+  }
+  if (d.alsoEmployee === "yes") {
+    put(d.employerName, 440, 437, 9, "center");    // השם המלא של המעביד
+    put(d.employerAddress, 283, 442, 9, "center"); // כתובת המעביד (above caption)
+  }
+  if (d.otherIncome === "yes") {
+    put(d.otherIncomeSource, 457, 627, 9, "center");
+    put(d.otherIncomeAmount, 336, 627, 9, "center");
+  }
+
   fs.writeFileSync(OUT, await pdf.save());
   console.log("wrote", OUT);
 })().catch(e => { console.error(e); process.exit(1); });

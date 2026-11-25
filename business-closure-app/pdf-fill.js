@@ -117,6 +117,26 @@
     put(pg, d.bizAddress, 230, 764, 10, "center");         // כתובת
     put(pg, d.phone, 83, 764, 10, "center");               // מספר טלפון
     put(pg, todayStr(), 485, 790, 10, "center");           // תאריך
+    // conditional text sections
+    if (r === "sold") {
+      const parts = String(d.buyerName || "").trim().split(/\s+/);
+      put(pg, parts.shift() || "", 490, 356, 9, "center");   // שם פרטי
+      put(pg, parts.join(" "), 392, 356, 9, "center");       // שם משפחה
+      put(pg, d.buyerId, 292, 356, 9, "center");             // מספר זהות/ח.פ
+      const sd = dparts(d.saleDate);
+      put(pg, sd.d, 186, 356, 9, "center");
+      put(pg, sd.m, 200, 356, 9, "center");
+      put(pg, sd.y ? sd.y.slice(-2) : "", 216, 356, 9, "center");
+      put(pg, d.saleAmount, 95, 356, 9, "center");           // סכום המכירה
+    }
+    if (d.alsoEmployee === "yes") {
+      put(pg, d.employerName, 440, 437, 9, "center");        // השם המלא של המעביד
+      put(pg, d.employerAddress, 283, 442, 9, "center");     // כתובת המעביד
+    }
+    if (d.otherIncome === "yes") {
+      put(pg, d.otherIncomeSource, 457, 627, 9, "center");
+      put(pg, d.otherIncomeAmount, 336, 627, 9, "center");
+    }
     await download(pdf, `טופס-2550-${d.osekNumber || "closure"}.pdf`);
   }
 
