@@ -23,7 +23,7 @@
       activity2026: "", incomeInClosingYear: "",
       unreportedDocs: "", debts: "", debtsDetail: "",
       hasStock: "", hasEquipment: "", assetsDetail: "",
-      employees: "", withholdingFile: "",
+      employees: "", withholdingFile: "", businessPremises: "",
       alsoEmployee: "", otherIncome: "", overpaid: "",
       buyerName: "", buyerId: "", saleDate: "", saleAmount: "",
       employerName: "", employerAddress: "",
@@ -262,6 +262,8 @@
         [["yes", "כן, יש מלאי"], ["no", "אין מלאי"]])}
       ${choiceField("hasEquipment", "האם נותר ציוד / רכוש קבוע של העסק?", d.hasEquipment,
         [["yes", "כן, יש ציוד"], ["no", "אין ציוד"]])}
+      ${choiceField("businessPremises", "המבנה ששימש את העסק הוא:", d.businessPremises,
+        [["owned", "בבעלותי"], ["rented", "בשכירות"]])}
 
       <div class="reveal ${showAssetDetail ? 'show' : ''}" data-reveal="assets">
         <div class="field full" style="margin-top:14px">
@@ -529,7 +531,7 @@
     const d = D();
     let items = [];
     if (key === "vat") {
-      items = ["חתימה (עמ׳ 2)", "המבנה ששימש את העסק — בבעלותי / בשכירות"];
+      items = ["חתימה (עמ׳ 2)", "סימון \"נותרו / לא נותרו מלאי ונכסים\" (סעיף ב)"];
       if (d.hasStock === "yes" || d.hasEquipment === "yes") items.push("טבלאות המלאי/הציוד (סעיף ב) — פירוט הפריטים ושוויים");
       if (d.cessationReason === "sold") items.push("סימון \"מכרתי את העסק כולל המלאי\" + פרטי הרוכש");
       items.push("תיבות הצהרה על בעלות בעסק אחר (אם רלוונטי)");

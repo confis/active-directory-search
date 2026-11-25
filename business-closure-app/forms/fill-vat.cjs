@@ -45,6 +45,7 @@ const fmtDate = (v) => {
     const y = PAGE_H - yTop;
     for (const ch of vis) { page.drawText(ch, { x, y, size, font, color: INK }); x += font.widthOfTextAtSize(ch, size); }
   }
+  function check(page, cx, yTop) { const w = font.widthOfTextAtSize("X", 9); page.drawText("X", { x: cx - w / 2, y: PAGE_H - yTop, size: 9, font, color: INK }); }
   // place a run of digits centered on each box center
   function digits(page, num, centers, yTop, size) {
     const s = String(num || "").replace(/\D/g, "");
@@ -69,6 +70,9 @@ const fmtDate = (v) => {
   put(p1, d.bizField, 463, 147, 11, "right");              // סוג עסק שנסגר
   put(p1, d.bizAddress, 390, 162, 11, "right");            // מען להתכתבות לאחר סגירה
   put(p1, fmtDate(d.cessationDate), 292, 179, 11, "right"); // ... החל מיום ___
+  // property-ownership checkbox (boxes detected at 362=כן, 326=לא, 290=בשכירות, y~349)
+  if (d.businessPremises === "owned") check(p1, 361, 352);
+  else if (d.businessPremises === "rented") check(p1, 289, 352);
 
   /* ---------- Page 2: top signature row ---------- */
   put(p2, fmtDate(d.submitDate || new Date().toISOString().slice(0, 10)), 476, 80, 11, "center"); // תאריך

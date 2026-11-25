@@ -72,7 +72,7 @@
 
   /* ---------- VAT form 18 ---------- */
   async function fillOfficialVat(d) {
-    const { pdf, put, digits } = await prepare("assets/vat18.pdf");
+    const { pdf, put, digits, check } = await prepare("assets/vat18.pdf");
     const [p1, p2] = pdf.getPages();
     const BOX = [41.8, 59.2, 76.6, 93.8, 111.2, 128.4, 145.6, 163.0, 180.4];
     digits(p1, d.osekNumber, BOX, 93.5, 11);
@@ -84,6 +84,8 @@
     put(p1, d.bizField, 463, 147, 11, "right");
     put(p1, d.bizAddress, 390, 162, 11, "right");
     put(p1, fmtDate(d.cessationDate), 292, 179, 11, "right");
+    if (d.businessPremises === "owned") check(p1, 361, 352);   // המבנה בבעלותי: כן
+    else if (d.businessPremises === "rented") check(p1, 289, 352); // בשכירות
     put(p2, todayStr(), 476, 80, 11, "center");
     put(p2, d.fullName, 291, 80, 11, "center");
     await download(pdf, `טופס-מעמ-18-${d.osekNumber || "closure"}.pdf`);
