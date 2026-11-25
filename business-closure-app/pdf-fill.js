@@ -37,11 +37,17 @@
     const font = await pdf.embedFont(fBytes, { subset: false });
     const INK = rgb(0.05, 0.10, 0.45);
     const H = pdf.getPages()[0].getHeight();
+    // Draw RTL text as individually-positioned glyphs in visual order, so no
+    // PDF viewer's bidi engine can re-order it (identical in every viewer).
     const put = (page, text, xRef, yTop, size, mode) => {
       if (text === "" || text == null) return;
       const vis = toVisual(text), w = font.widthOfTextAtSize(vis, size);
       let x = xRef; if (mode === "right") x = xRef - w; else if (mode === "center") x = xRef - w / 2;
-      page.drawText(vis, { x, y: H - yTop, size, font, color: INK });
+      const y = H - yTop;
+      for (const ch of vis) {
+        page.drawText(ch, { x, y, size, font, color: INK });
+        x += font.widthOfTextAtSize(ch, size);
+      }
     };
     const digits = (page, num, centers, yTop, size) => {
       const s = String(num || "").replace(/\D/g, "");

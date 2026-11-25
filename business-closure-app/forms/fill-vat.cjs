@@ -42,7 +42,8 @@ const fmtDate = (v) => {
     let x = xRef;
     if (mode === "right") x = xRef - w;
     else if (mode === "center") x = xRef - w / 2;
-    page.drawText(vis, { x, y: PAGE_H - yTop, size, font, color: INK });
+    const y = PAGE_H - yTop;
+    for (const ch of vis) { page.drawText(ch, { x, y, size, font, color: INK }); x += font.widthOfTextAtSize(ch, size); }
   }
   // place a run of digits centered on each box center
   function digits(page, num, centers, yTop, size) {

@@ -27,7 +27,8 @@ const dparts = (v) => { const p = String(v || "").split("-"); return p.length ==
     if (text === "" || text == null) return;
     const vis = toVisual(text), w = font.widthOfTextAtSize(vis, size);
     let x = xRef; if (mode === "right") x = xRef - w; else if (mode === "center") x = xRef - w / 2;
-    pg.drawText(vis, { x, y: PAGE_H - yTop, size, font, color: INK });
+    const y = PAGE_H - yTop;
+    for (const ch of vis) { pg.drawText(ch, { x, y, size, font, color: INK }); x += font.widthOfTextAtSize(ch, size); }
   };
   const digits = (num, centers, yTop, size) => {
     const s = String(num || "").replace(/\D/g, "");
